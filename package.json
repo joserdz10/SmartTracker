@@ -1,0 +1,19 @@
+{
+  "name": "casa-encuestadora-telegram-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/api/main.js",
+    "test": "npm run build && node --test dist/tests/**/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start:local": "node --env-file=.env dist/api/main.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}
