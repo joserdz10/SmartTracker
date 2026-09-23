@@ -57,3 +57,7 @@ No subas tokens ni llaves al repositorio.
 2. Agrupación avanzada por stories y deduplicación histórica.
 3. Persistencia robusta multiusuario.
 4. Levantamiento telefónico/Dinstar y resultados.
+
+## Nota de despliegue Railway
+
+El build de TypeScript genera el entrypoint en `dist/src/api/main.js`. El script `npm start` ya apunta a esa ruta.
