@@ -1,18 +1,21 @@
 import { getScope, scopePage, scopePageCount } from "../domain/scopes.js";
 import { createInsight } from "../domain/insight.js";
 import { createWatch } from "../domain/watch.js";
+import { ElectoralTracker } from "./electoralTracker.js";
 export class BotApp {
     telegram;
     store;
     questions;
     radar;
     now;
+    electoral;
     constructor(telegram, store, questions, radar, now = () => new Date().toISOString()) {
         this.telegram = telegram;
         this.store = store;
         this.questions = questions;
         this.radar = radar;
         this.now = now;
+        this.electoral = new ElectoralTracker(telegram, store, questions, now);
     }
     async handle(update) {
         if (update.callback_query)
@@ -36,6 +39,8 @@ export class BotApp {
             return this.showRadar(chatId);
         if (command === "/preguntas")
             return this.showQuestions(chatId, rest.join(" "));
+        if (await this.electoral.handleCommand(chatId, command, rest.join(" ")))
+            return;
         await this.telegram.sendMessage(chatId, "Comando no reconocido. Usa /start para abrir el menú.");
     }
     async handleCallback(callback) {
@@ -55,11 +60,14 @@ export class BotApp {
             return this.showRadar(chatId);
         if (callback.data.startsWith("questions:"))
             return this.showInsightQuestions(chatId, callback.data.slice("questions:".length));
+        if (await this.electoral.handleCallback(chatId, callback.data))
+            return;
     }
     async showHome(chatId) {
         const scope = await this.currentScope(chatId);
         const text = `<b>CASA ENCUESTADORA IA</b>\n\n📍 Ámbito: <b>${scope.name}</b>\n\nSelecciona una función:`;
         const keyboard = [
+            [{ text: "🗳 Elecciones", callback_data: "menu:elections" }, { text: "📈 Tracking", callback_data: "menu:tracking" }],
             [{ text: "📡 Radar", callback_data: "menu:radar" }, { text: "👁 Watchlist", callback_data: "menu:watchlist" }],
             [{ text: "🇲🇽 Cambiar ámbito", callback_data: "scope:page:0" }]
         ];
@@ -129,7 +137,7 @@ export class BotApp {
         const sources = insight.sourceUrls.slice(0, 3).map((url, index) => `<a href="${escapeHtml(url)}">Fuente ${index + 1}</a>`).join(" · ");
         const sourceLine = sources ? `\n\n🔗 ${sources}` : "";
         const text = `🧠 <b>${escapeHtml(insight.title)}</b>\n\n${escapeHtml(insight.summary)}${watch}\n\n<b>Qué podría medirse:</b>\n${escapeHtml(insight.surveyAngle)}${sourceLine}\n\n<code>${insight.id}</code>`;
-        await this.telegram.sendMessage(chatId, text, [[{ text: "📊 Generar preguntas", callback_data: `questions:${insight.id}` }]]);
+        await this.telegram.sendMessage(chatId, text, await this.electoral.insightKeyboard(insight.id));
     }
     async showInsightQuestions(chatId, insightId) {
         const insight = await this.store.getInsight(chatId, insightId);

@@ -5,15 +5,20 @@ import type { QuestionGenerator } from "./questionGenerator.js";
 import type { RadarAnalyzer } from "./radarAnalyzer.js";
 import type { Store } from "./store.js";
 import type { InlineKeyboard, TelegramPort, TelegramUpdate } from "./telegramPort.js";
+import { ElectoralTracker } from "./electoralTracker.js";
 
 export class BotApp {
+  private readonly electoral: ElectoralTracker;
+
   constructor(
     private readonly telegram: TelegramPort,
     private readonly store: Store,
     private readonly questions: QuestionGenerator,
     private readonly radar: RadarAnalyzer,
     private readonly now: () => string = () => new Date().toISOString()
-  ) {}
+  ) {
+    this.electoral = new ElectoralTracker(telegram, store, questions, now);
+  }
 
   async handle(update: TelegramUpdate): Promise<void> {
     if (update.callback_query) return this.handleCallback(update.callback_query);
@@ -30,6 +35,7 @@ export class BotApp {
     if (command === "/watchlist") return this.showWatchlist(chatId);
     if (command === "/radar") return this.showRadar(chatId);
     if (command === "/preguntas") return this.showQuestions(chatId, rest.join(" "));
+    if (await this.electoral.handleCommand(chatId, command, rest.join(" "))) return;
     await this.telegram.sendMessage(chatId, "Comando no reconocido. Usa /start para abrir el menú.");
   }
 
@@ -43,12 +49,14 @@ export class BotApp {
     if (callback.data === "menu:watchlist") return this.showWatchlist(chatId);
     if (callback.data === "menu:radar") return this.showRadar(chatId);
     if (callback.data.startsWith("questions:")) return this.showInsightQuestions(chatId, callback.data.slice("questions:".length));
+    if (await this.electoral.handleCallback(chatId, callback.data)) return;
   }
 
   private async showHome(chatId: number): Promise<void> {
     const scope = await this.currentScope(chatId);
     const text = `<b>CASA ENCUESTADORA IA</b>\n\n📍 Ámbito: <b>${scope.name}</b>\n\nSelecciona una función:`;
     const keyboard: InlineKeyboard = [
+      [{ text: "🗳 Elecciones", callback_data: "menu:elections" }, { text: "📈 Tracking", callback_data: "menu:tracking" }],
       [{ text: "📡 Radar", callback_data: "menu:radar" }, { text: "👁 Watchlist", callback_data: "menu:watchlist" }],
       [{ text: "🇲🇽 Cambiar ámbito", callback_data: "scope:page:0" }]
     ];
@@ -117,7 +125,7 @@ export class BotApp {
     const sources = insight.sourceUrls.slice(0, 3).map((url, index) => `<a href="${escapeHtml(url)}">Fuente ${index + 1}</a>`).join(" · ");
     const sourceLine = sources ? `\n\n🔗 ${sources}` : "";
     const text = `🧠 <b>${escapeHtml(insight.title)}</b>\n\n${escapeHtml(insight.summary)}${watch}\n\n<b>Qué podría medirse:</b>\n${escapeHtml(insight.surveyAngle)}${sourceLine}\n\n<code>${insight.id}</code>`;
-    await this.telegram.sendMessage(chatId, text, [[{ text: "📊 Generar preguntas", callback_data: `questions:${insight.id}` }]]);
+    await this.telegram.sendMessage(chatId, text, await this.electoral.insightKeyboard(insight.id));
   }
 
   private async showInsightQuestions(chatId: number, insightId: string): Promise<void> {

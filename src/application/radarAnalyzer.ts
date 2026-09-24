@@ -85,9 +85,9 @@ function parseItem(value: unknown): RadarItem | undefined {
 
 function buildPrompt(scopeName: string, watches: readonly string[]): string {
   const watchText = watches.length ? watches.join(", ") : "ninguno";
-  return `Busca noticias y acontecimientos públicos recientes, preferentemente de las últimas 24 horas, relevantes para ${scopeName}. ` +
-    `Watch especiales del usuario: ${watchText}. Agrupa notas duplicadas sobre el mismo acontecimiento. ` +
-    "Identifica hasta 5 acontecimientos que puedan justificar una medición de opinión pública. " +
+  return `Busca noticias y acontecimientos políticos/electorales públicos recientes, preferentemente de las últimas 24 horas, relevantes para ${scopeName}. ` +
+    `Watch especiales del usuario: ${watchText}. Prioriza acontecimientos vinculados con esas figuras o temas y agrupa notas duplicadas. ` +
+    "Identifica hasta 5 acontecimientos que puedan justificar una medición neutral de opinión pública o incorporarse a una ola de tracking electoral. " +
     "No califiques candidatos, no recomiendes opciones políticas, no predigas ganadores y no uses lenguaje persuasivo. " +
     "Para cada acontecimiento explica de manera factual qué ocurrió y qué variable neutral podría medirse. " +
     'Devuelve SOLO JSON válido con esta forma: {"items":[{"title":"...","summary":"...","survey_angle":"...","watch_match":"nombre del watch si aplica, o cadena vacía"}]}';
