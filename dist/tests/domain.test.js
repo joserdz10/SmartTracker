@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { SCOPES, getScope } from "../src/domain/scopes.js";
 import { createWatch } from "../src/domain/watch.js";
-import { fallbackQuestions } from "../src/domain/questions.js";
+import { fallbackProposal, fallbackQuestions } from "../src/domain/questions.js";
 test("includes 32 states plus national politics", () => {
     assert.equal(SCOPES.length, 33);
     assert.equal(getScope("NAC")?.name, "Política Nacional");
@@ -17,4 +17,9 @@ test("fallback questionnaire is neutral and usable without AI", () => {
     const questions = fallbackQuestions("movilidad metropolitana");
     assert.equal(questions.length, 5);
     assert.ok(questions.every((question) => question.options.length >= 3));
+});
+test("classifies an explicit voting-intention topic", () => {
+    const proposal = fallbackProposal("intención de voto para la próxima elección");
+    assert.equal(proposal.surveyType, "Intención de voto");
+    assert.equal(proposal.recommendedMethod, "Telefónica IVR");
 });

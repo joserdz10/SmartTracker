@@ -137,19 +137,20 @@ export class BotApp {
             return this.telegram.sendMessage(chatId, "Ese insight ya no está disponible. Ejecuta /radar nuevamente.");
         const scope = getScope(insight.scopeCode);
         const topic = `${insight.title}. ${insight.summary}. Objetivo de medición: ${insight.surveyAngle}`;
-        const questions = await this.questions.generate(topic, scope?.name ?? insight.scopeCode);
-        await this.sendQuestions(chatId, insight.title, scope?.name ?? insight.scopeCode, questions);
+        const proposal = await this.questions.generate(topic, scope?.name ?? insight.scopeCode);
+        await this.sendQuestions(chatId, insight.title, scope?.name ?? insight.scopeCode, proposal);
     }
     async showQuestions(chatId, topic) {
         if (!topic)
             return this.telegram.sendMessage(chatId, "Uso: <code>/preguntas tema a medir</code>");
         const scope = await this.currentScope(chatId);
-        const questions = await this.questions.generate(topic, scope.name);
-        await this.sendQuestions(chatId, topic, scope.name, questions);
+        const proposal = await this.questions.generate(topic, scope.name);
+        await this.sendQuestions(chatId, topic, scope.name, proposal);
     }
-    async sendQuestions(chatId, topic, scopeName, questions) {
-        const body = questions.map((question, index) => `${index + 1}. <b>${escapeHtml(question.text)}</b>\n${question.options.map((option, i) => `   ${i + 1}) ${escapeHtml(option)}`).join("\n")}`).join("\n\n");
-        await this.telegram.sendMessage(chatId, `📊 <b>PREGUNTAS SUGERIDAS</b>\nTema: ${escapeHtml(topic)}\nÁmbito: ${scopeName}\n\n${body}\n\nPropuesta para revisión humana antes del levantamiento.`);
+    async sendQuestions(chatId, topic, scopeName, proposal) {
+        const body = proposal.questions.map((question, index) => `${index + 1}. <b>${escapeHtml(question.text)}</b>\n${question.options.map((option, i) => `   ${i + 1}) ${escapeHtml(option)}`).join("\n")}`).join("\n\n");
+        const header = `📊 <b>PROPUESTA DE ENCUESTA</b>\n\n<b>Tipo:</b> ${escapeHtml(proposal.surveyType)}\n<b>Método recomendado:</b> ${escapeHtml(proposal.recommendedMethod)}\n<b>Objetivo:</b> ${escapeHtml(proposal.objective)}\n<b>Tema:</b> ${escapeHtml(topic)}\n<b>Ámbito:</b> ${escapeHtml(scopeName)}`;
+        await this.telegram.sendMessage(chatId, `${header}\n\n<b>Preguntas sugeridas</b>\n\n${body}\n\nPropuesta para revisión humana antes del levantamiento.`);
     }
     async currentScope(chatId) {
         return getScope((await this.store.getScope(chatId)) ?? "NLE") ?? getScope("NLE");

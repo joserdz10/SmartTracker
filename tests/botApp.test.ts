@@ -35,7 +35,12 @@ const radar: RadarAnalyzer = {
 
 const questions: QuestionGenerator = {
   async generate(topic) {
-    return [{ text: `¿Ha escuchado sobre ${topic}?`, options: ["Sí", "No", "NS/NR"] }];
+    return {
+      surveyType: "Coyuntural",
+      objective: `Medir percepción sobre ${topic}.`,
+      recommendedMethod: "Telefónica IVR",
+      questions: [{ text: `¿Ha escuchado sobre ${topic}?`, options: ["Sí", "No", "NS/NR"] }]
+    };
   }
 };
 
@@ -70,4 +75,18 @@ test("turns radar findings into an insight with a question-generation button", a
   const insightMessage = telegram.messages.find((message) => message.text.includes("Movilidad"));
   assert.ok(insightMessage);
   assert.ok(insightMessage.keyboard?.[0]?.[0]?.callback_data.startsWith("questions:I"));
+});
+
+
+test("shows survey type and recommended method when generating questions", async () => {
+  const telegram = new FakeTelegram();
+  const store = new MemoryStore();
+  await store.setScope(7, "NLE");
+  const app = new BotApp(telegram, store, questions, radar, () => "2026-09-23T12:00:00.000Z");
+
+  await app.handle({ update_id: 4, message: { chat: { id: 7 }, text: "/preguntas movilidad" } });
+
+  const message = telegram.messages.at(-1)?.text ?? "";
+  assert.ok(message.includes("Tipo:</b> Coyuntural"));
+  assert.ok(message.includes("Método recomendado:</b> Telefónica IVR"));
 });

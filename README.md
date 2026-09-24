@@ -61,3 +61,18 @@ No subas tokens ni llaves al repositorio.
 ## Nota de despliegue Railway
 
 El build de TypeScript genera el entrypoint en `dist/src/api/main.js`. El script `npm start` ya apunta a esa ruta.
+
+## Clasificación de encuesta
+
+Al generar preguntas, el bot recomienda primero el tipo de medición y muestra su objetivo y método de levantamiento. Tipos soportados en el MVP:
+
+- Coyuntural
+- Evaluación de gobierno
+- Evaluación de personaje
+- Conocimiento e imagen
+- Prioridades ciudadanas
+- Intención de voto
+- Escenario electoral
+- Tracking
+
+El método recomendado inicial es **Telefónica IVR**, alineado al MVP de levantamiento con Dinstar.
